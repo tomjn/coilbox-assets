@@ -1,0 +1,94 @@
+name: Promote
+
+# Moving approved pictures out of the hub's staging tier and into this one
+# (tomjn/coilbox-hub#111). The only writer to this repo after the seed.
+#
+# It runs here rather than in the hub because it has to commit here, and a
+# workflow in this repository gets a GITHUB_TOKEN that is minted per run,
+# scoped to this repository alone and expired when the run ends. Running it in
+# the hub would mean a deploy key or a personal access token with write access
+# to this repo, stored indefinitely in a third place.
+#
+# The price is the two secrets below, which are the most powerful credentials
+# the project has and have nothing to do with publishing images. They are
+# repository secrets on this repo:
+#
+#   SUPABASE_SERVICE_ROLE_KEY  bypasses row level security on the whole hub
+#                              database
+#   BLOB_READ_WRITE_TOKEN      read and write on the Vercel Blob staging store
+#
+# and NEXT_PUBLIC_SUPABASE_URL is a repository variable rather than a secret,
+# because it is public and is already in the hub's browser bundle.
+#
+# The job itself is in the hub, which is a public repository, so checking it
+# out needs no credential of any kind.
+
+on:
+  schedule:
+    # Daily, off peak. Nothing here needs to be fast: a picture waits seven
+    # days before it is eligible, so a run being late or skipped costs nothing
+    # but a little staging storage.
+    - cron: "0 3 * * *"
+  workflow_dispatch:
+    inputs:
+      write:
+        description: Actually promote, rather than reporting what would move
+        type: boolean
+        default: true
+
+permissions:
+  # Committing the objects.
+  contents: write
+  # Asking pages.yml to deploy. A push made with GITHUB_TOKEN does not start
+  # another workflow run, and workflow_dispatch is one of the two documented
+  # exceptions to that.
+  actions: write
+
+concurrency:
+  # A run waits for the deploy its own push triggered, which takes as long as
+  # publishing the whole tier takes. Two of these overlapping would have the
+  # second one waiting on the first one's deploy, so they queue instead.
+  group: promote
+  cancel-in-progress: false
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    # Generous, because most of the run is spent waiting for Pages to publish
+    # the whole tier, which grows with the corpus and not with the batch.
+    timeout-minutes: 60
+    steps:
+      - name: The durable tier
+        uses: actions/checkout@v7
+        with:
+          path: assets
+          # So the script can push what it commits.
+          persist-credentials: true
+
+      - name: The job
+        uses: actions/checkout@v7
+        with:
+          # Whatever the hub's default branch says today, deliberately. The
+          # promotion job and the schema it talks to are released together, so
+          # pinning a ref here would be a second place to remember to move.
+          repository: tomjn/coilbox-hub
+          path: hub
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install --frozen-lockfile
+        working-directory: hub
+
+      - name: Promote
+        working-directory: hub
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Empty is a dry run, which is the script's default and the only
+          # thing the dispatch input changes.
+          LIVE: ${{ inputs.write == false && '' || '--write' }}
+        run: bun run promote:assets --assets-repo ../assets $LIVE

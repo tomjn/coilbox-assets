@@ -4,6 +4,8 @@ The durable asset tier for [coilbox-hub](https://github.com/tomjn/coilbox-hub). 
 
 Automation writes to this repo. Do not add files by hand.
 
+None of these images are original work by coilbox, and this repository is a mirror rather than a licensor. Read [NOTICE.md](NOTICE.md) before reusing anything, and for how to ask for a file to be taken down.
+
 Assets are content addressed, so a file's contents determine its path and a path never points at different bytes later. The hub stores that path on its own, never a full URL, and puts the host in front of it from a single configuration value. Moving to another host, or serving from the app itself, is a change to that one value rather than a data migration.
 
 ## Publishing

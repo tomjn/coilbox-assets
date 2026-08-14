@@ -31,10 +31,10 @@ on:
     - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:
-      write:
-        description: Actually promote, rather than reporting what would move
+      dry_run:
+        description: Report what would move and change nothing
         type: boolean
-        default: true
+        default: false
 
 permissions:
   # Committing the objects.
@@ -88,7 +88,9 @@ jobs:
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
           BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # Empty is a dry run, which is the script's default and the only
-          # thing the dispatch input changes.
-          LIVE: ${{ inputs.write == false && '' || '--write' }}
+          # Both branches say something, because an empty string is falsy in a
+          # GitHub expression and `x && '' || y` is therefore always y. On a
+          # schedule `inputs.dry_run` is null, which is falsy, so the daily run
+          # is the live one.
+          LIVE: ${{ inputs.dry_run && '--dry-run' || '--write' }}
         run: bun run promote:assets --assets-repo ../assets $LIVE

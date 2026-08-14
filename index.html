@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Coilbox Assets</title>
+    <meta
+      name="description"
+      content="The asset host for Coilbox Hub: minimaps, buildpics and unit renders, served as static files."
+    />
+    <meta name="color-scheme" content="dark" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22%3E%3Crect width=%2224%22 height=%2224%22 rx=%225%22 fill=%22%230b0b0d%22/%3E%3Cpath d=%22M12 3 18.62 7.39A1.3 1.3 0 0 1 19.2 8.56L18.76 15.13A1.3 1.3 0 0 1 18.03 16.21L12.68 18.79A1.3 1.3 0 0 1 11.38 18.69L6.99 15.68A1.3 1.3 0 0 1 6.44 14.5L6.84 9.82A1.3 1.3 0 0 1 7.6 8.75L11.31 7.06A1.3 1.3 0 0 1 12.61 7.2L15.39 9.24A1.3 1.3 0 0 1 15.91 10.45L15.56 13.24A1.3 1.3 0 0 1 14.75 14.28L12.72 15.09A1.3 1.3 0 0 1 11.4 14.88L10.22 13.89A1.3 1.3 0 0 1 9.79 12.61L10.04 11.47A1.09 1.09 0 0 1 10.66 10.71L11.34 10.4%22 fill=%22none%22 stroke=%22%23fafafa%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22/%3E%3C/svg%3E"
+    />
+
+    <!-- Everything is inline on purpose. The publish workflow copies this repo
+         as it stands, with no build step, so the page cannot depend on a
+         stylesheet, a framework or a webfont it would have to fetch. -->
+    <style>
+      /* Values taken from app/globals.css in coilbox-hub. That file sets
+         color-scheme: dark and says there is no light theme on purpose, so
+         there is no prefers-color-scheme branch here either. */
+      :root {
+        color-scheme: dark;
+        --background: #0b0b0d;
+        --foreground: #fafafa;
+        /* Tailwind's neutral ramp, resolved to hex. The hub reaches for these
+           through class names it has a build step to expand. */
+        --neutral-100: #f5f5f5;
+        --neutral-300: #d4d4d4;
+        --neutral-400: #a1a1a1;
+        --neutral-800: #262626;
+        --neutral-900: #171717;
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100%;
+        background: var(--background);
+        color: var(--foreground);
+        /* Tailwind's preflight baseline, which the hub gets for free. */
+        line-height: 1.5;
+        /* The hub loads Geist through next/font. A third party webfont is out,
+           so this falls back to the same stack Geist itself falls back to. */
+        font-family:
+          ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      /* The backdrop is fixed to the viewport rather than the page, and masked
+         so it is at full strength along the bottom edge and gone by the top.
+         Matches the treatment in app/page.tsx. */
+      .backdrop {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        overflow: hidden;
+        pointer-events: none;
+        -webkit-mask-image: linear-gradient(to top, black, transparent);
+        mask-image: linear-gradient(to top, black, transparent);
+      }
+
+      .backdrop svg {
+        width: 100%;
+        height: 100%;
+      }
+
+      main {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        min-height: 100vh;
+        min-height: 100svh;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        padding: 4rem 1.5rem;
+        text-align: center;
+      }
+
+      .mark {
+        width: 5rem;
+        height: auto;
+        color: var(--foreground);
+      }
+
+      .lede {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 2.25rem;
+        line-height: 2.5rem;
+        font-weight: 600;
+        letter-spacing: -0.025em;
+      }
+
+      p {
+        margin: 0 auto;
+        max-width: 28rem;
+        text-wrap: balance;
+        color: var(--neutral-400);
+      }
+
+      .button {
+        display: inline-block;
+        border-radius: 0.375rem;
+        background: var(--neutral-100);
+        padding: 0.625rem 1.25rem;
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+        font-weight: 500;
+        color: var(--neutral-900);
+        text-decoration: none;
+        transition: background-color 150ms;
+      }
+
+      .button:hover {
+        background: #ffffff;
+      }
+
+      :focus-visible {
+        outline: 2px solid var(--foreground);
+        outline-offset: 2px;
+      }
+
+      @media (min-width: 640px) {
+        h1 {
+          font-size: 3rem;
+          line-height: 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .button {
+          transition: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- The hub drawing from components/art/drawings.ts, lifted by hand with
+         its palette resolved and its opacities already scaled by the 0.11
+         backdrop strength app/page.tsx passes. Decorative, so it is hidden
+         from assistive technology the way the hub hides it. -->
+    <div class="backdrop" aria-hidden="true">
+      <svg viewBox="0 0 320 148" preserveAspectRatio="xMidYMax slice">
+        <defs>
+          <radialGradient
+            id="hub-pool0"
+            cx="160"
+            cy="34"
+            r="152"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color="hsl(0 14% 58%)" stop-opacity="0.16" />
+            <stop offset="1" stop-color="hsl(0 14% 58%)" stop-opacity="0" />
+          </radialGradient>
+          <radialGradient
+            id="hub-pool1"
+            cx="160"
+            cy="108"
+            r="92"
+            gradientUnits="userSpaceOnUse"
+          >
+            <stop offset="0" stop-color="hsl(0 14% 58%)" stop-opacity="0.13" />
+            <stop offset="1" stop-color="hsl(0 14% 58%)" stop-opacity="0" />
+          </radialGradient>
+        </defs>
+        <rect width="320" height="200" fill="url(#hub-pool0)" />
+        <rect width="320" height="200" fill="url(#hub-pool1)" />
+        <g
+          fill="hsl(0 18% 70%)"
+          fill-opacity="0.06"
+          stroke="hsl(0 6% 54%)"
+          stroke-width="1.5"
+          stroke-opacity="0.07"
+        >
+          <polygon points="46,32 60,40 60,56 46,64 32,56 32,40" />
+          <rect x="92" y="20" width="34" height="26" rx="4" />
+          <circle cx="166" cy="46" r="16" />
+          <polygon points="222,14 238,30 222,46 206,30" />
+          <rect x="262" y="30" width="28" height="28" rx="4" />
+        </g>
+        <g
+          fill="none"
+          stroke="hsl(0 6% 54%)"
+          stroke-width="1.5"
+          stroke-opacity="0.05"
+          stroke-dasharray="6 9"
+        >
+          <path d="M-10 78 L330 78" />
+        </g>
+        <g
+          fill="hsl(0 18% 70%)"
+          fill-opacity="0.06"
+          stroke="hsl(0 6% 54%)"
+          stroke-width="1.2"
+          stroke-opacity="0.07"
+        >
+          <rect x="96" y="98" width="28" height="24" rx="3" />
+          <circle cx="212" cy="110" r="12" />
+        </g>
+        <g
+          fill="none"
+          stroke="hsl(0 0% 80%)"
+          stroke-width="2"
+          stroke-opacity="0.07"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M222 50 Q216 82 176 94" />
+          <path d="M188 84 L176 94 L191 96" />
+        </g>
+        <g fill="hsl(0 0% 80%)" fill-opacity="0.09">
+          <polygon points="160,92 175,107 160,122 145,107" />
+        </g>
+        <rect
+          x="84"
+          y="126"
+          width="152"
+          height="4"
+          rx="2"
+          fill="hsl(0 6% 54%)"
+          fill-opacity="0.06"
+        />
+      </svg>
+    </div>
+
+    <main>
+      <!-- The coilbox mark, matching components/CoilLogo.tsx. -->
+      <svg
+        class="mark"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        role="img"
+        aria-label="Coilbox"
+      >
+        <path
+          d="M12 3 18.62 7.39A1.3 1.3 0 0 1 19.2 8.56L18.76 15.13A1.3 1.3 0 0 1 18.03 16.21L12.68 18.79A1.3 1.3 0 0 1 11.38 18.69L6.99 15.68A1.3 1.3 0 0 1 6.44 14.5L6.84 9.82A1.3 1.3 0 0 1 7.6 8.75L11.31 7.06A1.3 1.3 0 0 1 12.61 7.2L15.39 9.24A1.3 1.3 0 0 1 15.91 10.45L15.56 13.24A1.3 1.3 0 0 1 14.75 14.28L12.72 15.09A1.3 1.3 0 0 1 11.4 14.88L10.22 13.89A1.3 1.3 0 0 1 9.79 12.61L10.04 11.47A1.09 1.09 0 0 1 10.66 10.71L11.34 10.4"
+        />
+      </svg>
+
+      <div class="lede">
+        <h1>Coilbox Assets</h1>
+        <p>
+          Pictures for Coilbox Hub. Minimaps, buildpics and unit renders live
+          here as plain files, written by automation and served straight from
+          this host.
+        </p>
+      </div>
+
+      <a class="button" href="https://coilbox-hub.vercel.app">Go to the hub</a>
+    </main>
+  </body>
+</html>

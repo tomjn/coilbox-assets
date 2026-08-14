@@ -29,5 +29,9 @@ jobs:
         with:
           # The whole repo, so the asset layout can change without touching this.
           path: .
+          # Off by default, and with it off the action drops every dotfile at
+          # the root, .nojekyll included. .git and .github stay excluded either
+          # way.
+          include-hidden-files: true
       - id: deployment
         uses: actions/deploy-pages@v5

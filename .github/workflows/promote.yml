@@ -1,7 +1,14 @@
 name: Promote
 
 # Moving approved pictures out of the hub's staging tier and into this one
-# (tomjn/coilbox-hub#111). The only writer to this repo after the seed.
+# (tomjn/coilbox-hub#111), and then sweeping what nothing claims and reporting
+# what the allowances have left (tomjn/coilbox-hub#113).
+#
+# The sweep commits nothing and has no reason to be in this repository, unlike
+# promotion. It is here because of the two secrets below: it needs both, both
+# are already here, and giving it a workflow of its own in the hub would mean
+# copying the most powerful credentials the project has into a second
+# repository to save nothing.
 #
 # It runs here rather than in the hub because it has to commit here, and a
 # workflow in this repository gets a GITHUB_TOKEN that is minted per run,
@@ -94,3 +101,29 @@ jobs:
           # is the live one.
           LIVE: ${{ inputs.dry_run && '--dry-run' || '--write' }}
         run: bun run promote:assets --assets-repo ../assets $LIVE
+
+      # Deleting staging objects nothing claims, and saying what the meters
+      # read (tomjn/coilbox-hub#113). It costs nothing out of the monthly
+      # allowance: the queue comes from Postgres, deleting is free, and the
+      # store is never asked what it holds.
+      #
+      # It runs whether promotion succeeded or not, because a promotion that
+      # could not reach the assets checkout has no bearing on whether a
+      # superseded object should still be in the store, and the numbers are
+      # worth having on a day the rest went wrong. Not `always()`, which would
+      # also keep a cancelled run going.
+      #
+      # It fails the run once a counted meter passes three quarters of its
+      # allowance. That is deliberate and it is the whole alerting story: going
+      # over 2,000 Blob advanced operations removes Blob access for 30 days and
+      # cannot be paid through, and a red scheduled job emailing the repository
+      # owner is the only channel this project has.
+      - name: Sweep and report
+        if: ${{ !cancelled() }}
+        working-directory: hub
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
+          LIVE: ${{ inputs.dry_run && '--dry-run' || '--write' }}
+        run: bun run cleanup:assets $LIVE

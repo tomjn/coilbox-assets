@@ -32,9 +32,9 @@ name: Promote
 
 on:
   schedule:
-    # Daily, off peak. Nothing here needs to be fast: a picture waits seven
-    # days before it is eligible, so a run being late or skipped costs nothing
-    # but a little staging storage.
+    # Daily, off peak. Nothing here needs to be fast: a picture waits a day
+    # after approval before it is eligible, so a run being late or skipped
+    # costs nothing but a little staging storage.
     - cron: "0 3 * * *"
   workflow_dispatch:
     inputs:

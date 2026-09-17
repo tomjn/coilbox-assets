@@ -5,10 +5,10 @@ name: Promote
 # what the allowances have left (tomjn/coilbox-hub#113).
 #
 # The sweep commits nothing and has no reason to be in this repository, unlike
-# promotion. It is here because of the two secrets below: it needs both, both
-# are already here, and giving it a workflow of its own in the hub would mean
-# copying the most powerful credentials the project has into a second
-# repository to save nothing.
+# promotion. It is here because of the secret below: it needs it, it is already
+# here, and giving it a workflow of its own in the hub would mean copying the
+# most powerful credential the project has into a second repository to save
+# nothing.
 #
 # It runs here rather than in the hub because it has to commit here, and a
 # workflow in this repository gets a GITHUB_TOKEN that is minted per run,
@@ -16,13 +16,13 @@ name: Promote
 # the hub would mean a deploy key or a personal access token with write access
 # to this repo, stored indefinitely in a third place.
 #
-# The price is the two secrets below, which are the most powerful credentials
-# the project has and have nothing to do with publishing images. They are
-# repository secrets on this repo:
+# The price is the secret below, which is the most powerful credential the
+# project has and has nothing to do with publishing images. It is a repository
+# secret on this repo:
 #
 #   SUPABASE_SERVICE_ROLE_KEY  bypasses row level security on the whole hub
-#                              database
-#   BLOB_READ_WRITE_TOKEN      read and write on the Vercel Blob staging store
+#                              database, and reads and deletes in the
+#                              staged-pictures bucket
 #
 # and NEXT_PUBLIC_SUPABASE_URL is a repository variable rather than a secret,
 # because it is public and is already in the hub's browser bundle.
@@ -93,7 +93,6 @@ jobs:
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Both branches say something, because an empty string is falsy in a
           # GitHub expression and `x && '' || y` is therefore always y. On a
@@ -102,28 +101,24 @@ jobs:
           LIVE: ${{ inputs.dry_run && '--dry-run' || '--write' }}
         run: bun run promote:assets --assets-repo ../assets $LIVE
 
-      # Deleting staging objects nothing claims, and saying what the meters
-      # read (tomjn/coilbox-hub#113). It costs nothing out of the monthly
-      # allowance: the queue comes from Postgres, deleting is free, and the
-      # store is never asked what it holds.
+      # Deleting bucket objects nothing claims, and saying what the meters
+      # read (tomjn/coilbox-hub#113).
       #
       # It runs whether promotion succeeded or not, because a promotion that
       # could not reach the assets checkout has no bearing on whether a
-      # superseded object should still be in the store, and the numbers are
+      # superseded object should still be in the bucket, and the numbers are
       # worth having on a day the rest went wrong. Not `always()`, which would
       # also keep a cancelled run going.
       #
       # It fails the run once a counted meter passes three quarters of its
-      # allowance. That is deliberate and it is the whole alerting story: going
-      # over 2,000 Blob advanced operations removes Blob access for 30 days and
-      # cannot be paid through, and a red scheduled job emailing the repository
-      # owner is the only channel this project has.
+      # allowance. That is deliberate and it is the whole alerting story: a red
+      # scheduled job emailing the repository owner is the only channel this
+      # project has.
       - name: Sweep and report
         if: ${{ !cancelled() }}
         working-directory: hub
         env:
           NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          BLOB_READ_WRITE_TOKEN: ${{ secrets.BLOB_READ_WRITE_TOKEN }}
           LIVE: ${{ inputs.dry_run && '--dry-run' || '--write' }}
         run: bun run cleanup:assets $LIVE

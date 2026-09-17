@@ -14,12 +14,11 @@ Every push to `main` deploys the whole repo with the workflow in `.github/workfl
 
 ## Promotion
 
-`.github/workflows/promote.yml` runs daily and is what puts assets here. It moves anything the hub approved more than seven days ago out of the hub's Vercel Blob staging tier: it commits the objects here, waits until Pages is serving them, moves the rows, and only then deletes from Blob. The job itself lives in [coilbox-hub](https://github.com/tomjn/coilbox-hub) at `scripts/promote-assets.ts`, and this repo checks it out to run it.
+`.github/workflows/promote.yml` runs daily and is what puts assets here. It moves anything the hub approved more than a day ago out of the hub's staged-pictures bucket in Supabase: it commits the objects here, waits until Pages is serving them, moves the rows, and only then deletes from the bucket. The job itself lives in [coilbox-hub](https://github.com/tomjn/coilbox-hub) at `scripts/promote-assets.ts`, and this repo checks it out to run it.
 
-It needs three things set on this repository, and none of them is optional:
+It needs two things set on this repository, and neither is optional:
 
-- `SUPABASE_SERVICE_ROLE_KEY`, a repository secret. Bypasses row level security on the whole hub database.
-- `BLOB_READ_WRITE_TOKEN`, a repository secret. Read and write on the staging store.
+- `SUPABASE_SERVICE_ROLE_KEY`, a repository secret. Bypasses row level security on the whole hub database, including the staged-pictures bucket.
 - `NEXT_PUBLIC_SUPABASE_URL`, a repository variable rather than a secret, because it is public already.
 
 `.nojekyll` at the root turns off Jekyll. Without it Pages would skip files and directories whose names begin with an underscore, and would work through a few hundred megabytes of binaries for nothing.
